@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
 import './index.css';
-import i from './step01';
+import './step01/index2';
 
 ReactDOM.render(
   <App />,
