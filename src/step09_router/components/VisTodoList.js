@@ -4,11 +4,11 @@ import { toggleTodo } from '../actions'
 
 const getVisTodos = (todos, filter) => {
   switch(filter){
-    case 'SHOW_ALL':
+    case 'all':
       return todos
-    case 'SHOW_COMPLETED':
+    case 'completed':
       return todos.filter(x=> x.completed)
-    case 'SHOW_ACTIVE':
+    case 'active':
       return todos.filter(x=> !x.completed)
     default:
       return todos
@@ -33,9 +33,9 @@ const TodoList = ({ todos, onTodoClick }) => (
     )}
   </ul>
 )
-const mapStateToTodoListProps = (state) => {
+const mapStateToProps = (state, props) => {
   return {
-    todos: getVisTodos(state.todos, state.visFilter)
+    todos: getVisTodos(state.todos, props.filter)
   }
 }
 const mapDispatchToTodoListProps = (dispatch) => {
@@ -44,7 +44,7 @@ const mapDispatchToTodoListProps = (dispatch) => {
   }
 }
 const VisTodoList = connect(
-  mapStateToTodoListProps,
+  mapStateToProps,
   mapDispatchToTodoListProps
 )(TodoList)
 

@@ -1,10 +1,8 @@
-import { combineReducers } from 'redux';
-import todos from './todos';
-import visFilter from './visFilter';
+import { combineReducers } from 'redux'
+import todos from './todos'
 
 const todoApp = combineReducers({
-  todos,
-  visFilter,
+  todos
 });
 
 export default todoApp;
