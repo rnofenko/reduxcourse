@@ -1,4 +1,5 @@
 import { createStore, combineReducers } from 'redux'
+import { Provider, connect } from 'react-redux'
 import React from 'react';
 import ReactDOM from 'react-dom';
 
@@ -46,10 +47,7 @@ const visFilter = (state = 'SHOW_ALL', action) => {
   }
 }
 
-const todoApp = combineReducers({todos, visFilter})
-const store = createStore(todoApp)
-
-const Link = ({active ,children, onClick}) => {
+const Link = ({active, children, onClick}) => {
   if(active){
     return <span>{children}</span>
   }
@@ -62,34 +60,20 @@ const Link = ({active ,children, onClick}) => {
     >{children}</a>
   )
 }
-
-class FilterLink extends React.Component {
-  componentDidMount () {
-    this.unsubscribe = store.subscribe(()=>{
-      console.log('link mount')
-      this.forceUpdate()
-    })
-  }
-
-  componentWillUnmount () {
-    console.log('link unsubscribe')
-    this.unsubscribe()
-  }
-
-  render () {
-    const props = this.props
-    const state = store.getState()
-
-    return (
-      <Link
-        active={props.filter == state.visFilter}
-        onClick={()=> store.dispatch({type: 'SET_VIS_FILTER', filter: props.filter})}
-       >
-        {props.children}
-       </Link>
-    )
+const mapStateToLinkProps = (state, props) => {
+  return {
+    active: props.filter === state.visFilter
   }
 }
+const mapDispatchToLinkProps = (dispatch, props) => {
+  return {
+    onClick: id => { dispatch({type: 'SET_VIS_FILTER', filter: props.filter}) }
+  }
+}
+const FilterLink = connect(
+  mapStateToLinkProps,
+  mapDispatchToLinkProps
+)(Link)
 
 const Todo = ({onClick, completed, text}) => (
   <li
@@ -100,16 +84,6 @@ const Todo = ({onClick, completed, text}) => (
   </li>
 )
 
-const TodoList = ({ todos, onTodoClick }) => (
-  <ul>
-    {todos.map(todo =>
-      <Todo key={todo.id} {...todo}
-        onClick={() => onTodoClick(todo.id)}
-      />
-    )}
-  </ul>
-)
-
 const getVisTodos = (todos, filter) => {
   switch(filter){
     case 'SHOW_ALL':
@@ -118,22 +92,26 @@ const getVisTodos = (todos, filter) => {
       return todos.filter(x=> x.completed)
     case 'SHOW_ACTIVE':
       return todos.filter(x=> !x.completed)
+    default:
+      return todos
   }
 }
 
-const AddTodo = ({onAddClick}) => {
+let nextTodoId = 0;
+let AddTodo = ({dispatch}) => {
   let input;
-
+  
   return (
     <div>
       <input ref={node => { input = node}} />
       <button onClick={() => {
-        onAddClick(input.value)
+        dispatch({type: 'ADD_TODO', id: ++nextTodoId, text: input.value})
         input.value=''
       }}>ADD</button>
     </div>
   )
 }
+AddTodo = connect()(AddTodo)
 
 const Footer = () => (
   <p>
@@ -147,21 +125,43 @@ const Footer = () => (
   </p>
 )
 
-let nextTodoId = 0;
-const TodoApp = ({todos, visFilter}) => (
+const TodoList = ({ todos, onTodoClick }) => (
+  <ul>
+    {todos.map(todo =>
+      <Todo key={todo.id} {...todo}
+        onClick={() => onTodoClick(todo.id)}
+      />
+    )}
+  </ul>
+)
+const mapStateToTodoListProps = (state) => {
+  return {
+    todos: getVisTodos(state.todos, state.visFilter)
+  }
+}
+const mapDispatchToTodoListProps = (dispatch) => {
+  return {
+    onTodoClick: id => { dispatch({type: 'TOGGLE_TODO', id}) }
+  }
+}
+const VisTodoList = connect(
+  mapStateToTodoListProps,
+  mapDispatchToTodoListProps
+)(TodoList)
+
+const TodoApp = () => (
   <div>
-    <AddTodo onAddClick={text => store.dispatch({type: 'ADD_TODO', id: ++nextTodoId, text}) } />
-    <TodoList todos={getVisTodos(todos, visFilter)} onTodoClick={id=> store.dispatch({type: 'TOGGLE_TODO', id})} />
+    <AddTodo />
+    <VisTodoList />
     <Footer />
   </div>
 )
 
-const render = () => {
-  ReactDOM.render(
-    <TodoApp {...store.getState()} />,
-    document.getElementById('root')
-  )
-}
+const todoApp = combineReducers({todos, visFilter})
 
-store.subscribe(()=>render())
-render()
+ReactDOM.render(
+  <Provider store={createStore(todoApp)}>
+    <TodoApp />
+  </Provider>,
+  document.getElementById('root')
+)
